@@ -61,16 +61,31 @@ En esta sección se definen las reglas y el comportamiento estándar con el que 
   - El script localiza automáticamente la imagen del banner configurada en la sección general (o por convención en `archivos/imagenes/*.png`, o explícitamente en el JSON mediante `"course_image": "ruta/o/nombre.png"` dentro de `"course"` o en la raíz).
   - La imagen se empaqueta con su hash SHA-1 en el pool de archivos de Moodle (`files/`) y se registra en `files.xml` y `course/inforef.xml` en el área `overviewfiles` del componente `course`.
 
-### 1.4. Gestión y Duplicación por Grupos (Clases)
+### 1.4. Cuestionarios y Banco de Preguntas (`.gift`)
+* Permite incorporar a cualquier tema un cuestionario de autoevaluación o examen a partir de un archivo con formato **GIFT** (extensión `.gift`, por ejemplo `cuestionario_tema1_sistemas_operativos.gift`).
+* **Banco de preguntas (`questions.xml`)**:
+  - Todas las preguntas contenidas en el archivo `.gift` se incorporan automáticamente al Banco de Preguntas del curso de Moodle.
+  - **Categoría configurable**: Cada cuestionario puede especificar su categoría en el banco (`category`). Si no se define, se asigna automáticamente al título del tema.
+  - **Versionado Moodle 4.x/5.x**: Se crea la jerarquía oficial con categoría superior `top`, subcategorías, `question_bank_entry`, `question_version` y referencias en los slots del cuestionario con versión dinámica (`$@NULL@$`), garantizando que siempre se utiliza y actualiza la versión más reciente del banco.
+  - **Tipos de preguntas soportados**: Opción múltiple (`multichoice` con respuesta simple o respuestas ponderadas porcentualmente), Verdadero/Falso (`truefalse`), Emparejamiento (`match`), Respuesta corta (`shortanswer`) y Ensayo/Desarrollo (`essay`).
+* **Opciones por defecto del cuestionario (configurables en el JSON)**:
+  - **Sin retroalimentación hasta el cierre**: Por defecto, las máscaras de revisión (`reviewattempt`, `reviewcorrectness`, `reviewmarks`, `reviewspecificfeedback`, `reviewgeneralfeedback`, `reviewrightanswer`, etc.) se fijan en `16` (`AFTER_CLOSE`), de modo que no se muestra ningún tipo de puntuación, solución o retroalimentación mientras el cuestionario esté abierto o durante los intentos.
+  - **Tiempo límite**: Por defecto `20` minutos (`time_limit: 20` -> 1200 segundos).
+  - **Intentos permitidos máximos**: Por defecto `1` intento (`max_attempts: 1` -> `<attempts_number>1</attempts_number>`).
+  - **Preguntas en orden aleatorio**: Por defecto barajadas (`shuffle_questions: true` -> `<shufflequestions>1</shufflequestions>`).
+  - **Respuestas barajadas**: Por defecto activado (`shuffle_answers: true`).
+  - **Calificación máxima**: Por defecto `10.0` puntos (escalado automático sobre la suma total de puntos de las preguntas).
+
+### 1.5. Gestión y Duplicación por Grupos (Clases)
 * Si una asignatura tiene varios grupos (por ejemplo en Digitalización: `DIG1` y `DIG2`):
   - Cada grupo representa una clase distinta que puede tener ritmos o fechas límite de entrega diferentes.
-  - Las tareas se **duplican automáticamente** (una tarea para `DIG1` y otra para `DIG2`).
-  - Cada tarea duplicada incluye su condición de disponibilidad (`availability`) restringida exclusivamente a ese grupo:
+  - Las tareas y cuestionarios se **duplican automáticamente** (una actividad para `DIG1` y otra para `DIG2`).
+  - Cada actividad duplicada incluye su condición de disponibilidad (`availability`) restringida exclusivamente a ese grupo:
     `{"op":"&","c":[{"type":"group","id":<group_id>}],"showc":[true]}`.
   - Los grupos quedan definidos en `groups.xml` y referenciados en `course/inforef.xml` para que Moodle cree los grupos al restaurar.
 * Si no se configuran grupos, las actividades se crean una única vez sin restricciones de disponibilidad.
 
-### 1.5. Archivo de Configuración de Asignatura
+### 1.6. Archivo de Configuración de Asignatura
 Dentro de la carpeta de la asignatura puede existir un archivo llamado `config_backup_moodle_<asignatura>.json` (o `config_backup_moodle.json`) para personalizar la copia. Ejemplo:
 ```json
 {
@@ -121,7 +136,19 @@ Dentro de la carpeta de la asignatura puede existir un archivo llamado `config_b
       "button_text": "TEMA 1 (WEB)",
       "show_activity_description": false,
       "visible": true,
-      "activities_visible": true
+      "activities_visible": true,
+      "quizzes": [
+        {
+          "name": "Cuestionario Tema 1: Sistemas Operativos",
+          "gift_file": "cuestionario_tema1_sistemas_operativos.gift",
+          "category": "Tema 1: Sistemas Operativos",
+          "time_limit": 20,
+          "max_attempts": 1,
+          "shuffle_questions": true,
+          "shuffle_answers": true,
+          "feedback_mode": "after_close"
+        }
+      ]
     },
     {
       "folder": "documentos-digitales",
